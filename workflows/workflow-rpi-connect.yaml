@@ -1,0 +1,69 @@
+id: fb20b1eb-e896-4477-a71c-bc9e114e70ab
+name: rpi-connect
+description: >-
+  Read Raspberry Pi Connect status from rpi-local and report it. The
+  signedIn assert is deliberately allowFailure: true — this machine is
+  currently signed out, which is a normal, un-opted-in state, not a
+  failure. Once remote access actually matters (per the roadmap's own
+  framing for when to build this extension), flip allowFailure to false so
+  losing sign-in actually fails the run.
+version: 1
+tags: {}
+trigger:
+  schedule: "*/5 * * * *"
+jobs:
+  - name: collect
+    description: Read Raspberry Pi Connect status.
+    dependsOn: []
+    steps:
+      - name: readConnect
+        task:
+          type: model_method
+          modelIdOrName: rpi-local
+          methodName: readConnect
+        dependsOn: []
+
+  - name: assert
+    description: >-
+      Non-blocking visibility check on sign-in state. See the workflow
+      description for why allowFailure is true here.
+    dependsOn:
+      - job: collect
+        condition:
+          type: completed
+    steps:
+      - name: signed-in
+        allowFailure: true
+        task:
+          type: assert
+          expr: >-
+            data.latest("rpi-local", "connect").attributes.signedIn == true
+          message: >-
+            Not signed in to Raspberry Pi Connect (signedIn=${{ data.latest("rpi-local", "connect").attributes.signedIn }}).
+            Non-blocking: this only matters once remote access is actually
+            depended on. See rawStatus for the full output.
+          severity: low
+        dependsOn: []
+
+  - name: report
+    description: >-
+      Print a one-screen summary. Depends on collect only (not assert), so
+      it still runs when an assertion fails.
+    dependsOn:
+      - job: collect
+        condition:
+          type: completed
+    steps:
+      - name: summarize
+        task:
+          type: model_method
+          modelType: "command/shell"
+          modelName: rpi-connect-summary
+          methodName: execute
+          inputs:
+            run: >-
+              echo "rpi-connect: rpi-local" &&
+              echo "  signedIn: ${{ data.latest('rpi-local', 'connect').attributes.signedIn }}" &&
+              echo "  remoteShellEnabled: ${{ data.latest('rpi-local', 'connect').attributes.remoteShellEnabled }}" &&
+              echo "  screenSharingEnabled: ${{ data.latest('rpi-local', 'connect').attributes.screenSharingEnabled }}"
+        dependsOn: []
