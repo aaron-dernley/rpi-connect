@@ -25,9 +25,9 @@ swamp extension pull @aaronge/rpi-connect
 ## Usage
 
 ```sh
-swamp model create @aaronge/rpi-connect rpi-local
+swamp model create @aaronge/rpi-connect connect-local
 
-swamp model method run rpi-local readConnect
+swamp model method run connect-local readConnect
 ```
 
 The method writes one resource: `connect`. Every field is described — run
@@ -37,7 +37,7 @@ Reference the latest snapshot from a workflow assert step or another model:
 
 ```yaml
 expr: >-
-  data.latest("rpi-local", "connect").attributes.signedIn == true
+  data.latest("connect-local", "connect").attributes.signedIn == true
 ```
 
 ## Global arguments
@@ -64,7 +64,11 @@ names a Raspberry Pi — before writing anything.
 
 ## Workflow
 
-The extension ships an `rpi-connect` workflow: a `collect` job runs
+The workflow is listed under `workflows:` in `manifest.yaml`, so
+`swamp extension pull @aaronge/rpi-connect` installs it alongside the model. It
+expects a model instance named `connect-local`.
+
+The extension ships an `@aaronge/rpi-connect` workflow: a `collect` job runs
 `readConnect`, an `assert` job checks `signedIn == true` with
 **`allowFailure: true`** (this machine is currently signed out, a normal
 un-opted-in state, not a failure — flip this to `false` once remote access

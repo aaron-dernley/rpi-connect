@@ -1,7 +1,7 @@
 id: fb20b1eb-e896-4477-a71c-bc9e114e70ab
-name: rpi-connect
+name: "@aaronge/rpi-connect"
 description: >-
-  Read Raspberry Pi Connect status from rpi-local and report it. The
+  Read Raspberry Pi Connect status from connect-local and report it. The
   signedIn assert is deliberately allowFailure: true — this machine is
   currently signed out, which is a normal, un-opted-in state, not a
   failure. Once remote access actually matters (per the roadmap's own
@@ -19,7 +19,7 @@ jobs:
       - name: readConnect
         task:
           type: model_method
-          modelIdOrName: rpi-local
+          modelIdOrName: connect-local
           methodName: readConnect
         dependsOn: []
 
@@ -37,9 +37,9 @@ jobs:
         task:
           type: assert
           expr: >-
-            data.latest("rpi-local", "connect").attributes.signedIn == true
+            data.latest("connect-local", "connect").attributes.signedIn == true
           message: >-
-            Not signed in to Raspberry Pi Connect (signedIn=${{ data.latest("rpi-local", "connect").attributes.signedIn }}).
+            Not signed in to Raspberry Pi Connect (signedIn=${{ data.latest("connect-local", "connect").attributes.signedIn }}).
             Non-blocking: this only matters once remote access is actually
             depended on. See rawStatus for the full output.
           severity: low
@@ -62,8 +62,8 @@ jobs:
           methodName: execute
           inputs:
             run: >-
-              echo "rpi-connect: rpi-local" &&
-              echo "  signedIn: ${{ data.latest('rpi-local', 'connect').attributes.signedIn }}" &&
-              echo "  remoteShellEnabled: ${{ data.latest('rpi-local', 'connect').attributes.remoteShellEnabled }}" &&
-              echo "  screenSharingEnabled: ${{ data.latest('rpi-local', 'connect').attributes.screenSharingEnabled }}"
+              echo "rpi-connect: connect-local" &&
+              echo "  signedIn: ${{ data.latest('connect-local', 'connect').attributes.signedIn }}" &&
+              echo "  remoteShellEnabled: ${{ data.latest('connect-local', 'connect').attributes.remoteShellEnabled }}" &&
+              echo "  screenSharingEnabled: ${{ data.latest('connect-local', 'connect').attributes.screenSharingEnabled }}"
         dependsOn: []
