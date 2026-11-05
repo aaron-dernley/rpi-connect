@@ -77,21 +77,26 @@ regardless of whether the assert job passed. Scheduled every 5 minutes via
 `trigger.schedule`, the same cadence as the other telemetry-focused
 extensions in this family.
 
-**Two things to get right if you run this on a schedule via a bare
-system-level `systemd.timer` (not a per-user session/`swamp serve`):**
+**`XDG_RUNTIME_DIR` must reach the process that runs `readConnect`.**
+`rpi-connect status` talks to `rpi-connectd` over a per-user runtime
+socket; without this env var it fails with "Raspberry Pi Connect is not
+running" even when the service is genuinely up. A `swamp serve` installed
+as a systemd user service (what `swamp serve daemon enable` installed
+when run as a normal user on this Pi) gets it from the user manager, so it
+needs nothing extra. A system-level unit doesn't inherit a login session's
+environment, so one of those must set
+`Environment=XDG_RUNTIME_DIR=/run/user/<uid>`.
 
-1. Set `Environment=XDG_RUNTIME_DIR=/run/user/<uid>` on the unit.
-   `rpi-connect status` talks to `rpi-connectd` over a per-user runtime
-   socket; without this env var it fails with "Raspberry Pi Connect is
-   not running" even when the service is genuinely up — a system-level
-   unit doesn't inherit a login session's environment automatically.
-2. Pass `--fail-on medium` to `swamp workflow run`. A workflow step's own
-   `allowFailure: true` only controls DAG continuation, not the process
-   exit code — `swamp workflow run` exits non-zero on any failed assert
-   regardless, which would make a naive systemd unit report "failed" on
-   every run while signed out, even though that's this workflow's
-   intended, non-alarming steady state (`severity: low` on the
-   `signed-in` assert, matched to the `--fail-on` threshold here).
+**If you run it with a plain `swamp workflow run` (e.g. from cron)
+instead of `swamp serve`,** pass `--fail-on medium`. A workflow step's own
+`allowFailure: true` only controls DAG continuation, not the process exit
+code. `swamp workflow run` exits non-zero on any failed assert regardless,
+which would make a wrapper report "failed" on every run while signed out,
+even though that's this workflow's intended, non-alarming steady state
+(`severity: low` on the `signed-in` assert, matched to the `--fail-on`
+threshold here). Before 2026-11-05 this Pi ran it from a system-level
+`systemd.timer` that needed both of these settings; it now runs under the
+ops repo's user-mode `swamp serve`.
 
 ## License
 
